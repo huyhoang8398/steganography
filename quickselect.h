@@ -1,10 +1,10 @@
 #pragma once
+
 #include "definitions.h"
 
 // https://en.wikipedia.org/wiki/Quickselect
 // This implementation is based on Quicksort with a form of Hoare's partition
-void quickselect(pair_fi* a, int l, int r, int K)
-{
+void quickselect(pair_fi *a, int l, int r, int K) {
     // we only cares about the first K elements, so if a sorting range (l,r)
     // is outside that segments, we can ignore it
     if (l > K) return;
@@ -15,9 +15,9 @@ void quickselect(pair_fi* a, int l, int r, int K)
     // all elements larger than pivot to the left
     // smaller than pivots to the right
     while (i <= j) {
-        while (a[i] > pivot) i++; 
-        while (a[j] < pivot) j--; 
-               
+        while (a[i] > pivot) i++;
+        while (a[j] < pivot) j--;
+
         if (i <= j) {
             swap(a[i], a[j]);
             i++;
@@ -31,7 +31,6 @@ void quickselect(pair_fi* a, int l, int r, int K)
 
 // sort array so that K largest elements is at the beginning.
 // remaining elements don't matter
-void sortLargestOnly(int n, pair_fi* a, int K)
-{
+void sortLargestOnly(int n, pair_fi *a, int K) {
     quickselect(a, 0, n - 1, K);
 }

@@ -1,17 +1,16 @@
 #include "stena_gpu.cuh"
 #include "stena_cpu.h"
 
-__device__ __constant__ float cfilter[32*32]; // constant memory for filter. This gives 2x better speed
+__device__ __constant__ float cfilter[32 * 32]; // constant memory for filter. This gives 2x better speed
 // pre-allocate data array on gpu, trade memory usage for speed 
-namespace StenaGpu
-{
+namespace StenaGpu {
     // variables with the letter 'g' in front are arrays in GPU memory
     int sizeV = 0, sizeIndexes = 0, sizegV = 0, sizeSort = 0, sizeFilter = 0, sizePixels = 0;
-    byte* gpixels_alloc = nullptr;
-    float* gfilter_alloc = nullptr, * gV_alloc = nullptr;
-    float* V_alloc = nullptr; 
-    pair_fi* sortData_alloc = nullptr;
-    int* bestIndexes_alloc = nullptr;
+    byte *gpixels_alloc = nullptr;
+    float *gfilter_alloc = nullptr, *gV_alloc = nullptr;
+    float *V_alloc = nullptr;
+    pair_fi *sortData_alloc = nullptr;
+    int *bestIndexes_alloc = nullptr;
 
     void initPixels(int n) {
         if (gpixels_alloc == nullptr) {
@@ -47,7 +46,7 @@ namespace StenaGpu
             cudaMalloc(&gV_alloc, n * sizeof(float));
             sizegV = n;
         }
-    } 
+    }
 
     void initV(int n) {
         if (V_alloc == nullptr) {
@@ -73,22 +72,21 @@ namespace StenaGpu
         if (sizeIndexes < n) {
             delete[] bestIndexes_alloc;
             bestIndexes_alloc = new int[n];
-            sizeIndexes = n;            
+            sizeIndexes = n;
         }
     }
 }
 using namespace StenaGpu;
 
 //*****************
-void stenaInitCuda(const PPMImage* image, const Filter& filter, int n)
-{
+void stenaInitCuda(const PPMImage *image, const Filter &filter, int n) {
     int imgH = image->height, imgW = image->width;
     int filtH = filter.height, filtW = filter.width;
 
     initPixels(imgH * imgW);
-    initFilter(filtH * filtW);    
+    initFilter(filtH * filtW);
     initgV(imgH * imgW);
-    initV(filtH * filtW);    
+    initV(filtH * filtW);
     initIndexes(n);
 }
 
@@ -98,11 +96,11 @@ void stenaInitCuda(const PPMImage* image, const Filter& filter, int n)
 #define TILE_DIM (32)
 #define tidx (threadIdx.x)
 #define tidy (threadIdx.y)
+
 __global__
-void myconv2dCuda(const int imgH, const int imgW, const byte* pixels,
-                  const int filtH, const int filtW, const float* filter,
-                  float* V)
-{
+void myconv2dCuda(const int imgH, const int imgW, const byte *pixels,
+                  const int filtH, const int filtW, const float *filter,
+                  float *V) {
     // Each block has size 32x32 (threads). Each block will process a group of columns.
     //   Each thread correspond to one pixel, the filter's top-left corner is placed at (myrow, mycol).
     //   So, thread (tidx,tidy) has input (myrow, mycol) and output to pixel V[myrow + filtH/2][mycol + filtW/2].
@@ -111,22 +109,21 @@ void myconv2dCuda(const int imgH, const int imgW, const byte* pixels,
     // To process entire image, each block loop over rows:
     //   process rows 0...x, x+1...2x, 2x+1...3x, ...; where x = TILE_DIM - filtH + 1
 
-    __shared__ float smem[TILE_DIM][TILE_DIM];        
-    
+    __shared__ float smem[TILE_DIM][TILE_DIM];
+
     // rowsPerBlock = TILE_DIM - filtH + 1; Formula: roundup(a/b) = (a + b - 1) / b.
     const int loop = (imgH + (TILE_DIM - filtH + 1) - 1) / (TILE_DIM - filtH + 1),
-              stride = TILE_DIM - filtH + 1,
-              halfH = filtH / 2, halfW = filtW / 2;
-              
+            stride = TILE_DIM - filtH + 1,
+            halfH = filtH / 2, halfW = filtW / 2;
+
     // colsPerBlock = TILE_DIM - filtW + 1
     const int mycol = blockIdx.x * (TILE_DIM - filtW + 1) + tidy,
-              mycolOut = mycol + halfW;
+            mycolOut = mycol + halfW;
     int myrow = tidx, myrowOut = tidx + halfH;
-        
-    for (int t = 0; t < loop; t++)
-    {
-        __syncthreads();        
-        
+
+    for (int t = 0; t < loop; t++) {
+        __syncthreads();
+
         // load image data to shared memory
         if (mycol >= imgW || myrow >= imgH) smem[tidx][tidy] = 0;
         else {
@@ -137,53 +134,53 @@ void myconv2dCuda(const int imgH, const int imgW, const byte* pixels,
 
         // convolute. Note that all threads in a warp access the same filter[cell(i,j,filtW)] at all steps.
         // So, we use constant memory for better speed.
-        if (tidx < TILE_DIM - filtH + 1 && tidy < TILE_DIM - filtW + 1 && // the top-left corner of the filter is put here, and it must fit inside the tile.
+        if (tidx < TILE_DIM - filtH + 1 && tidy < TILE_DIM - filtW + 1 &&
+            // the top-left corner of the filter is put here, and it must fit inside the tile.
             myrowOut < imgH - halfH && mycolOut < imgW - halfW) // It must output to a pixel position inside the image
         {
-            float tmp = 0;           
+            float tmp = 0;
             for (int i = 0; i < filtH; i++)
                 for (int j = 0; j < filtW; j++)
-                    tmp += smem[tidx + i][tidy + j] * filter[cell(i, j, filtW)];            
-            
-            V[cell(myrowOut, mycolOut, imgW)] = tmp;            
-        }     
-        
+                    tmp += smem[tidx + i][tidy + j] * filter[cell(i, j, filtW)];
+
+            V[cell(myrowOut, mycolOut, imgW)] = tmp;
+        }
+
         // update indexes
         myrow += stride;
         myrowOut += stride;
-    }            
+    }
 }
 
-void stenaConvCuda(const PPMImage* image, const Filter& filter, float **outputgV)    
-{
+void stenaConvCuda(const PPMImage *image, const Filter &filter, float **outputgV) {
     int imgH = image->height, imgW = image->width;
     int filtH = filter.height, filtW = filter.width;
 
-    byte* gdata = gpixels_alloc; ;
+    byte *gdata = gpixels_alloc;;
     cudaMemcpy(gdata, image->data, imgH * imgW * 3 * sizeof(byte), cudaMemcpyHostToDevice);
 
     // constant memory -> 2x faster than global memory, which is commented out
     //float* gfilter = gfilter_alloc;
     //cudaMemcpy(gfilter, filter.data, filtH * filtW * sizeof(float), cudaMemcpyHostToDevice);    
-    float* gfilter;
-    cudaGetSymbolAddress((void**)&gfilter, cfilter);
+    float *gfilter;
+    cudaGetSymbolAddress((void **) &gfilter, cfilter);
     cudaMemcpyToSymbol(cfilter, filter.data, filtH * filtW * sizeof(float));
-    
-    float* gV = gV_alloc;
+
+    float *gV = gV_alloc;
     cudaMemset(gV, 0, imgH * imgW * sizeof(float)); // make sure all border pixels are 0
-    int columnsPerBlock = TILE_DIM - filtW + 1;                             // each block can process x columns -> need roundup(W/x) blocks to cover all columns
+    int columnsPerBlock = TILE_DIM - filtW +
+                          1;                             // each block can process x columns -> need roundup(W/x) blocks to cover all columns
     dim3 grid((imgW + columnsPerBlock - 1) / columnsPerBlock, 1, 1);
     dim3 block(TILE_DIM, TILE_DIM, 1);
-    myconv2dCuda << <grid, block, 2 * filtH * filtW * sizeof(float) >> > 
-        (imgH, imgW, gdata, filtH, filtW, gfilter, gV);
+    myconv2dCuda << < grid, block, 2 * filtH * filtW * sizeof(float) >> >
+    (imgH, imgW, gdata, filtH, filtW, gfilter, gV);
     cudaDeviceSynchronize();
-      
+
     *outputgV = gV;
 }
 
 //*****************
-void stenaCuda(const string s, const PPMImage* image, const Filter& filter, PPMImage** result, Bencher* bench)
-{
+void stenaCuda(const string s, const PPMImage *image, const Filter &filter, PPMImage **result, Bencher *bench) {
     const int imgH = image->height, imgW = image->width;
     const int filtH = filter.height, filtW = filter.width;
     const int n = s.length();
@@ -198,60 +195,59 @@ void stenaCuda(const string s, const PPMImage* image, const Filter& filter, PPMI
         cout << "String is longer than this image. Not supported\n";
         exit(-1);
     }
-    
+
     //****
-    timer.startCounter();    
+    timer.startCounter();
     stenaInitCuda(image, filter, n); // allocate arrays on CPU and GPU
     if (bench != nullptr) bench->timeInit = timer.getCounter();
 
     //*****
     timer.startCounter();
-    float* gV;
+    float *gV;
     stenaConvCuda(image, filter, &gV); // convolution and store result in gV, a GPU array
     if (bench != nullptr) bench->timeConv = timer.getCounter();
 
     //*****
     timer.startCounter();
-    float* V = V_alloc;
-    cudaMemcpy(V, gV, imgH * imgW * sizeof(float), cudaMemcpyDeviceToHost);    
+    float *V = V_alloc;
+    cudaMemcpy(V, gV, imgH * imgW * sizeof(float), cudaMemcpyDeviceToHost);
 
-    int* bestIndexes = bestIndexes_alloc;
-    pair_fi* sortData = sortData_alloc;
+    int *bestIndexes = bestIndexes_alloc;
+    pair_fi *sortData = sortData_alloc;
     for (int i = 0; i < imgH * imgW; i++) sortData[i] = pair_fi(V[i], i);
     findLargestValues(imgH, imgW, sortData, 8 * n, bestIndexes);
     if (bench != nullptr) bench->timeSort = timer.getCounter();
-    
+
     //*****
     timer.startCounter();
-    hideString(s, image, bestIndexes, result);    
+    hideString(s, image, bestIndexes, result);
     if (bench != nullptr) bench->timeOutput = timer.getCounter();
 }
 
-string stenaInvCuda(PPMImage* image, const Filter& filter, const int n)
-{
-    const int imgH = image->height, imgW = image->width;    
+string stenaInvCuda(PPMImage *image, const Filter &filter, const int n) {
+    const int imgH = image->height, imgW = image->width;
     if (n > imgH * imgW) {
         cout << "String is longer than this image. Can't recover string\n";
         exit(-1);
     }
-    
+
     //****    
     // everything is the same as stenaCuda, only the final step is different (getString() instead of hideString())
-    stenaInitCuda(image, filter, n); 
-    
-    float* gV;
+    stenaInitCuda(image, filter, n);
+
+    float *gV;
     stenaConvCuda(image, filter, &gV); // convolution and store result in gV, a GPU array    
 
     //*****
-    float* V = V_alloc;
+    float *V = V_alloc;
     cudaMemcpy(V, gV, imgH * imgW * sizeof(float), cudaMemcpyDeviceToHost);
 
     //*****
-    int* bestIndexes = bestIndexes_alloc;
-    pair_fi* sortData = sortData_alloc;
+    int *bestIndexes = bestIndexes_alloc;
+    pair_fi *sortData = sortData_alloc;
     for (int i = 0; i < imgH * imgW; i++) sortData[i] = pair_fi(V[i], i);
     findLargestValues(imgH, imgW, sortData, 8 * n, bestIndexes);
 
     //*****
-    return getString(n, image, bestIndexes);    
+    return getString(n, image, bestIndexes);
 }

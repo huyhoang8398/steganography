@@ -1,4 +1,5 @@
 #pragma once
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -24,18 +25,19 @@ typedef pair<int, int> pair_ii;
 typedef pair<float, int> pair_fi;
 
 // get position in 1D array of pixel at row i, column j, in image with width w
-#define cell(i,j,w) ((i)*(w) + (j))
+#define cell(i, j, w) ((i)*(w) + (j))
 
 // struct to store benchmark results of a steganographie function
 struct Bencher {
-    double timeInit=0, timeConv=0, timeSort=0, timeOutput=0;
+    double timeInit = 0, timeConv = 0, timeSort = 0, timeOutput = 0;
+
     Bencher() {}
 
     double totalTime() {
         return timeInit + timeConv + timeSort + timeOutput;
     }
 
-    Bencher operator + (const Bencher& other) const {
+    Bencher operator+(const Bencher &other) const {
         Bencher res;
         res.timeInit = timeInit + other.timeInit;
         res.timeConv = timeConv + other.timeConv;
