@@ -1,0 +1,7 @@
+nvcc main.cu stena_gpu.cu auto_tester.cu ppm_lib.cpp stena_cpu.cpp --machine 64 -o stena 
+nvcc main.cu stena_gpu.cu auto_tester.cu ppm_lib.cpp stena_cpu.cpp -gencode=arch=compute_52,code=sm_52 --machine 64 -o stena 
+
+The first line can be used for all machine. Second line for Maxwell (GTX 9xx) and above.
+
+To plot graphs, run stena program with option 5 to create benchmark files.
+Then, run graphing.py (make sure matplotlib is installed).

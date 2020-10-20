@@ -1,0 +1,150 @@
+resolution: 1080 1920
+filter: 3 3
+time-init: 0.0264232
+time-conv: 29.0691
+time-sort: 37.1534
+time-output: 2.21328
+time-total: 68.4622
+
+
+************
+resolution: 1080 1920
+filter: 5 5
+time-init: 0.0002704
+time-conv: 70.1185
+time-sort: 37.1108
+time-output: 2.19923
+time-total: 109.429
+
+
+************
+resolution: 1080 1920
+filter: 7 7
+time-init: 0.000283
+time-conv: 126.348
+time-sort: 36.6287
+time-output: 2.17227
+time-total: 165.149
+
+
+************
+resolution: 1080 1920
+filter: 9 9
+time-init: 0.000283
+time-conv: 202.741
+time-sort: 36.8115
+time-output: 2.16644
+time-total: 241.719
+
+
+************
+resolution: 1080 1920
+filter: 11 11
+time-init: 0.0002902
+time-conv: 305.856
+time-sort: 36.5548
+time-output: 2.16583
+time-total: 344.577
+
+
+************
+resolution: 1080 1920
+filter: 13 13
+time-init: 0.0002934
+time-conv: 435.899
+time-sort: 36.6358
+time-output: 2.15897
+time-total: 474.694
+
+
+************
+resolution: 1080 1920
+filter: 15 15
+time-init: 0.000288
+time-conv: 575.669
+time-sort: 35.64
+time-output: 2.12525
+time-total: 613.435
+
+
+************
+resolution: 1080 1920
+filter: 17 17
+time-init: 0.000289
+time-conv: 739.62
+time-sort: 36.6736
+time-output: 2.17823
+time-total: 778.472
+
+
+************
+resolution: 1080 1920
+filter: 19 19
+time-init: 0.0002884
+time-conv: 935.154
+time-sort: 36.3914
+time-output: 2.14767
+time-total: 973.693
+
+
+************
+resolution: 1080 1920
+filter: 21 21
+time-init: 0.0002964
+time-conv: 1139.65
+time-sort: 35.8049
+time-output: 2.13939
+time-total: 1177.59
+
+
+************
+resolution: 1080 1920
+filter: 23 23
+time-init: 0.0002924
+time-conv: 1364.08
+time-sort: 36.782
+time-output: 2.14329
+time-total: 1403
+
+
+************
+resolution: 1080 1920
+filter: 25 25
+time-init: 0.0002928
+time-conv: 1606.7
+time-sort: 36.5856
+time-output: 2.16098
+time-total: 1645.45
+
+
+************
+resolution: 1080 1920
+filter: 27 27
+time-init: 0.000295
+time-conv: 1867.83
+time-sort: 35.7763
+time-output: 2.11385
+time-total: 1905.72
+
+
+************
+resolution: 1080 1920
+filter: 29 29
+time-init: 0.0002924
+time-conv: 2149.48
+time-sort: 35.4641
+time-output: 2.08218
+time-total: 2187.02
+
+
+************
+resolution: 1080 1920
+filter: 31 31
+time-init: 0.0002998
+time-conv: 2448.49
+time-sort: 35.393
+time-output: 2.11697
+time-total: 2486
+
+
+************
