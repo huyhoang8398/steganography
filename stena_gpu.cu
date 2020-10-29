@@ -168,8 +168,7 @@ void stenaConvCuda(const PPMImage *image, const Filter &filter, float **outputgV
 
     float *gV = gV_alloc;
     cudaMemset(gV, 0, imgH * imgW * sizeof(float)); // make sure all border pixels are 0
-    int columnsPerBlock = TILE_DIM - filtW +
-                          1;                             // each block can process x columns -> need roundup(W/x) blocks to cover all columns
+    int columnsPerBlock = TILE_DIM - filtW + 1;     // each block can process x columns -> need roundup(W/x) blocks to cover all columns
     dim3 grid((imgW + columnsPerBlock - 1) / columnsPerBlock, 1, 1);
     dim3 block(TILE_DIM, TILE_DIM, 1);
     myconv2dCuda << < grid, block, 2 * filtH * filtW * sizeof(float) >> >
