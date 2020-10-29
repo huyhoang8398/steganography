@@ -11,7 +11,7 @@ header-includes: |
     \usepackage{multicol}
     \usepackage{graphicx}
 footer-left: Do Hoang et Mai Phuong
-mainfont: SourceSansPro-Regular.otf 
+fontfamily: sourcesanspro
 caption-justification: centering
 ...
 \pagenumbering{Roman} 
