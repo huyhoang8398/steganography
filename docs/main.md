@@ -11,7 +11,9 @@ header-includes: |
     \usepackage{multicol}
     \usepackage{graphicx}
 footer-left: Do Hoang et Mai Phuong
-fontfamily: sourcesanspro
+mainfont: NewComputerModern
+sansfont: NewComputerModern
+monofont: Dank Mono
 caption-justification: centering
 ...
 \pagenumbering{Roman} 
@@ -93,9 +95,7 @@ This section is straightforward. For each character in the string, we hide each 
 
 Using bit-wise operations, it is simple to manipulate the bits of a number. More details can be found in the code's comments, inside function `hideString()` and `getString()` of file `stena_cpu.cpp`.
 
-
 PPMImage** result should be uninitialized. It will be initialized here
-
 
 # Implementation GPU
 
@@ -114,7 +114,7 @@ We define 2 new variables:
 
 In the `ppm_lib.h` library, a Pixel is represent by a struct:
 
-```c++
+```c
 struct PPMPixel {
     unsigned char red, green, blue;
 }
@@ -133,7 +133,7 @@ Our kernel launch blocks of 32×32 threads, `TILE_DIM=32` in the code, each bloc
 Each block processes `colpb` continuous columns. After it finishes with the first rowpb rows, it moves on to the next rows, and so on. Therefore, we need to launch enough blocks to cover all columns, which equals to: `roundup(W / colpb)`.
 The kernel launch looks like this:
 
-```c++
+```c
 int columnsPerBlock = TILE_DIM - filtW + 1; 
 dim3 grid((imgW + columnsPerBlock - 1) / columnsPerBlock, 1, 1);
 dim3 block(TILE_DIM, TILE_DIM, 1);
@@ -153,7 +153,7 @@ __shared__ float smem[TILE_DIM][TILE_DIM];
 Then, we need to define some variables (more details in the code comment).
 // TODO describe code
 
-```c++
+```c
 // rowsPerBlock = TILE_DIM - filtH + 1; Formula: roundup(a/b) = (a + b - 1) / b.
 const int loop = (imgH + (TILE_DIM - filtH + 1) - 1) / (TILE_DIM - filtH + 1),
           stride = TILE_DIM - filtH + 1,
@@ -167,7 +167,7 @@ Recall that at each step, a block process rowpb rows of array V. So, loop is the
 For each block, the first thing to do is loading data from global memory (the image) into shared memory. 
 Since we launch blocks of 32×32 threads, which match smem exactly, loading data is very simple.
 
-```c++
+```c
 // load image data to shared memory
 if (mycol >= imgW || myrow >= imgH) smem[tidx][tidy] = 0;
 else {
@@ -184,7 +184,7 @@ The variables myrow, mycol represent the current pixel position of a thread. The
 ### Convolution and output
 For each thread, the top-left corner of the filter is placed at (myrow, mycol). Therefore, the output pixel is placed at (myrowOut, mycolOut), which is shown in the second image of the previous subsection.
 
-```c++
+```c
  // convolute. Note that all threads in a warp access the same filter[cell(i,j,filtW)] at all steps.
  // So, we use constant memory for better speed.
  if (tidx < TILE_DIM - filtH + 1 && tidy < TILE_DIM - filtW + 1 &&
@@ -206,7 +206,7 @@ For each thread, the top-left corner of the filter is placed at (myrow, mycol). 
 
 Finally, convolution is very simple. First, we only consider threads that can fit the filter inside the image and outputs to a pixel inside the image.
 Then, each thread loop over the filter and multiply it with the corresponding pixel (in shared memory). We noticed that all threads in a warp always access the same element of the filter at each step in this loop, so the filter is put in **constant memory** for better performance. By doing this, instead of reading the data serially, the GPU can issue a **broadcast**, meaning all threads get the required data immediately. 
-Finally, the corresponding pixel V(myrowOut, mycolOut) is updated, and blocks move on to process the next set of rows.
+Finally, the corresponding pixel `V(myrowOut, mycolOut)` is updated, and blocks move on to process the next set of rows.
 
 ### Other steps
 
