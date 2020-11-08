@@ -28,8 +28,11 @@ caption-justification: centering
 \pagenumbering{arabic} 
 
 # Introduction 
+
 ## Context and Motivation
 
+Steganography is a method of hiding message, file, or even image inside another message, file or image. 
+The advantage of Steganography in the cryptology field is that we can concealing an cipher encrypted text inside an image without alter the original picture drastically.
 
 ## Objectives
 
@@ -292,8 +295,74 @@ Since we use a fixed tile size of 32x32, and the number of rows/columns that are
 
 # Conclusion
 
+In this project we used the parallel architecture of GPU as a solution for performing a Steganography program with the support of CUDA. Yet, there is still a lot of things for improvement for this project, the task that we archived in this project are described as follow:
+
 - Made both Stena CPU and GPU version, with automated testing
 - GPU version is considerably faster
 - Bonus: can hide multiple characters
 - Bonus: can work with many filter sizes (including non-square filters)
+- Bonus: find n number values elements with largest values, then output their index using `quicksort` and `quickselection`
 
+# Demo
+
+First, to compile, extract the `.zip` file and use the following command:
+
+```bash
+nvcc main.cu stena_gpu.cu auto_tester.cu ppm_lib.cpp stena_cpu.cpp --machine 64 -o stena
+```
+
+Or using makefile with:
+```bash
+make all
+```
+
+Then, run the program.
+We use a simple console UI with keyboard input to demo our project.
+
+![User interface](UI.png)
+
+We included several images in our submission for you to test.
+
+![ppm exaple](img.png)
+
+**1. Encrypting an image:**
+
+![Encrypting an image](encrypt.png)
+
+You need to type in the hidden message, an image file to hide the image, and a filter seed. The seed is used to generate a filter and it acts like a password (a same seed will generate the same file).
+The program will hide your message in a new image; you can see its name in the last line `Encrypted in file ___.ppm`
+On the left is the original image (1.ppm). On the right, the message “hello world” is hidden inside using the filter seed 25. You can see that they’re nearly identical.
+
+To change filter size, you can change it on `demo.h` file.
+
+**2. Decrypting an image**
+
+![Decrypting an image](decrypt.png)
+
+You need to input the name of the encrypted image and the filter seed. Then, the program will decrypt the image and output the hidden message.
+
+**3. Testing correctness of the program**
+
+![Correctness of the program](test.png)
+
+This option creates 100 random images and filter with different sizes, run both the CPU/GPU version, and check if they both produce the same values at each step (convolution/output string). 
+
+We do this to ensure that the program is correct. We’ve run 10000s of test and the program passed everything.
+
+**4. Testing speed of the program**
+
+![Speed test](speed.png)
+
+With this option, the program will generate images and filters of random sizes. Then, it outputs the run time of each phase of Steganographie functions (both CPU and GPU versions). 
+
+Note that even on the same data, the running time might be slightly different due to random CPU activities. To counter this, in the official benchmark, we run 100s of times and measure the average running time.
+
+**5. Testing speed of the program**
+
+This is you to generate the benchmark files that we use for plotting graphs.
+
+**6. Plotting**
+
+After you use option 5, the program will create 2 benchmark files (might take a few hours). Each file contains the execution time of Stena CPU or GPU version for 1080p images at different filter radius.
+
+Then, run `graphing.py` to generates the graphs (pdf format).
