@@ -95,13 +95,18 @@ This section is straightforward. For each character in the string, we hide each 
 
 Using bit-wise operations, it is simple to manipulate the bits of a number. More details can be found in the code's comments, inside function `hideString()` and `getString()` of file `stena_cpu.cpp`.
 
-PPMImage** result should be uninitialized. It will be initialized here
+//TODO: PPMImage** result should be uninitialized. It will be initialized here
 
 # Implementation GPU
 
 ## Methods
 
 We only use GPU acceleration for convolution. For sorting and outputting, we use the same functions from the CPU version. Since convolution accounts for the overwhelming majority of the execution time, this improvement still speedups the program greatly.
+
+To calculate the V matrix, we are using this formula:
+\begin{center}
+$V_{i,j} = \displaystyle\sum_{m\in[i-1, i+1], n\in[j-1,j+1]}(r_{m,n}+g_{m,n})* filtre_{m-i,n-j})$
+\end{center}
 
 We used Tiled 2D Convolution, which uses Shared memory to improve speed. The idea is from [*this lecture*](http://www.cs.ucr.edu/~nael/217-f15/lectures/217-lec8.pdf). In this project, we assume the filter sizes satisfy: `M, N <= 31`
 
@@ -128,9 +133,15 @@ However, in the GPU version, we use raw array of bytes. That means 3 consecutive
 We do this for simplicity, and because raw data is easier to handle in kernel code.
 
 ### Kernel call configuration
-
 Our kernel launch blocks of 32×32 threads, `TILE_DIM=32` in the code, each block processes a tile of size rowpb × colpb pixels. 
 Each block processes `colpb` continuous columns. After it finishes with the first rowpb rows, it moves on to the next rows, and so on. Therefore, we need to launch enough blocks to cover all columns, which equals to: `roundup(W / colpb)`.
+Each thread correspond to one pixel, the filter's top-left corner is placed at `(myrow, mycol)`. So that `thread (tidx,tidy)` has input `(myrow, mycol)` and output to pixel `V[myrow + filtH/2][mycol + filtW/2]`.
+Each block process `(TILE_DIM - filtW + 1)` columns (draw an image to imagine).
+To process imgW column, need `roundup(imgW / (TILE_DIM-filtW+1))` blocks.
+To process entire image, each block loop over rows:
+
+- process rows 0...x, x+1...2x, 2x+1...3x,...; where x = TILE_DIM - filtH + 1
+
 The kernel launch looks like this:
 
 ```c
@@ -140,7 +151,7 @@ dim3 block(TILE_DIM, TILE_DIM, 1);
 myconv2dCuda << < grid, block, 2 * filtH * filtW * sizeof(float) >> >
     (imgH, imgW, gdata, filtH, filtW, gfilter, gV);
 ```
-// todo , desc more details hereee
+//TODO: , desc more details hereee
 
 ### Loading data into shared memory 
 
@@ -183,10 +194,9 @@ The variables myrow, mycol represent the current pixel position of a thread. The
 
 ### Convolution and output
 For each thread, the top-left corner of the filter is placed at (myrow, mycol). Therefore, the output pixel is placed at (myrowOut, mycolOut), which is shown in the second image of the previous subsection.
+**Note** that all threads in a warp access the same `filter[cell(i,j,filtW)]` at all steps, so that we use constant memory for better speed.
 
 ```c
- // convolute. Note that all threads in a warp access the same filter[cell(i,j,filtW)] at all steps.
- // So, we use constant memory for better speed.
  if (tidx < TILE_DIM - filtH + 1 && tidy < TILE_DIM - filtW + 1 &&
      // the top-left corner of the filter is put here, and it must fit inside the tile.
      myrowOut < imgH - halfH && mycolOut < imgW - halfW) // It must output to a pixel position inside the image
@@ -211,6 +221,24 @@ Finally, the corresponding pixel `V(myrowOut, mycolOut)` is updated, and blocks 
 ### Other steps
 
 After computing V, the sorting and outputting sections use the same CPU functions as the CPU Stena version. 
+
+## Auto testing
+
+We have developed a proper way for testing the correctness and also speed of our Stena implementation by generating images and compare the results of the GPU version with CPU version as well as checking that the encryption/decryption process outputs the original message.
+
+If a parameter `(imgH, imgW,...)` is <= 0, it is randomly generated. 
+
+    - Parameters: number of tests, image height/width, filter height/width (must be odd number <= 31)
+
+```c++
+void testCorrectness(int ntest, int imgH = -1, int imgW = -1, int filtH = -1, int filtW = -1);
+
+void testSpeed(int ntest, int imgH = -1, int imgW = -1, int filtH = -1, int filtW = -1);
+// - Parameters: number of test, image height/width, filter height/width (must be odd number <= 31),
+// use CUDA or not.
+// This will benchmark ntest times (might takes hours) and store the average run time in a file.
+void benchmark(int ntest, int imgH, int imgW, int filtH, int filtW, bool useCuda = false);
+```
 
 ## Benchmark results
 For benchmarking, we use FullHD images (1920x1080) because this is a very common resolution. We measure the execution time of Stena at different filter radius (for benchmarking, we use square filters).
