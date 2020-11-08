@@ -366,3 +366,13 @@ This is you to generate the benchmark files that we use for plotting graphs.
 After you use option 5, the program will create 2 benchmark files (might take a few hours). Each file contains the execution time of Stena CPU or GPU version for 1080p images at different filter radius.
 
 Then, run `graphing.py` to generates the graphs (pdf format).
+
+# References
+
+[GPU Architecture and Parallel Programming](http://www.cs.ucr.edu/~nael/217-f15/lectures/217-lec8.pdf)
+
+[Cuda Programming by NVIDIA](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html)
+
+[Quick select algorithm](https://en.wikipedia.org/wiki/Quickselect?fbclid=IwAR1Pi_yRMcz0yGqt70r30zmIB5ThgDuNPMSyJrJILf6FPTuiRCJk_f7fBAA)
+
+PPM library
