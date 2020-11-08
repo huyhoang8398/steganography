@@ -6,7 +6,7 @@ author: \textbf{DO Duy Huy Hoang} \newline
         \newline
         \textit{University of Limoges} \newline 
 date: \today
-titlepage: true
+titlepage: false
 header-includes: |
     \usepackage{multicol}
     \usepackage{graphicx}
