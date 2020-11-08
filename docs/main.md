@@ -95,7 +95,25 @@ This section is straightforward. For each character in the string, we hide each 
 
 Using bit-wise operations, it is simple to manipulate the bits of a number. More details can be found in the code's comments, inside function `hideString()` and `getString()` of file `stena_cpu.cpp`.
 
-//TODO: PPMImage** result should be uninitialized. It will be initialized here
+### Hide String
+
+Hide j-th bit of the character in the LSB of this pixel
+```c++
+res->data[pixelIndex].blue &= ~byte(1);
+```
+`byte(1) = 00000001 -> ~byte(1) = 11111110` `->` this turns off bit 0
+```c++
+res->data[pixelIndex].blue |= (s[i] >> j) & 1; 
+```
+Set bit 0 to the j-th bit of character s[i]
+
+### Read string
+
+Reads bit 0 at this pixel position and update c `(x & 1)` get bit 0 of x 
+`c |= (1 << j)` turns on j-th bit of c; `c |= (0 << j)` do nothing
+```c++
+c |= (image->data[pixelIndex].blue & 1) << j;
+```
 
 # Implementation GPU
 
@@ -151,7 +169,6 @@ dim3 block(TILE_DIM, TILE_DIM, 1);
 myconv2dCuda << < grid, block, 2 * filtH * filtW * sizeof(float) >> >
     (imgH, imgW, gdata, filtH, filtW, gfilter, gV);
 ```
-//TODO: , desc more details hereee
 
 ### Loading data into shared memory 
 
@@ -162,7 +179,6 @@ __shared__ float smem[TILE_DIM][TILE_DIM];
 ```
 
 Then, we need to define some variables (more details in the code comment).
-// TODO describe code
 
 ```c
 // rowsPerBlock = TILE_DIM - filtH + 1; Formula: roundup(a/b) = (a + b - 1) / b.
@@ -222,7 +238,7 @@ Finally, the corresponding pixel `V(myrowOut, mycolOut)` is updated, and blocks 
 
 After computing V, the sorting and outputting sections use the same CPU functions as the CPU Stena version. 
 
-## Auto testing
+### Auto testing
 
 We have developed a proper way for testing the correctness and also speed of our Stena implementation by generating images and compare the results of the GPU version with CPU version as well as checking that the encryption/decryption process outputs the original message.
 
@@ -243,7 +259,7 @@ void benchmark(int ntest, int imgH, int imgW, int filtH, int filtW, bool useCuda
 ## Benchmark results
 For benchmarking, we use FullHD images (1920x1080) because this is a very common resolution. We measure the execution time of Stena at different filter radius (for benchmarking, we use square filters).
 
-The benchmark is done on a computer with 8750H CPU at 3.1GHz, 16GB dual-channel 2666MHz DDR4, 1060 6gb, and Windows 10. The program is compiled in Visual Studio 2019 Release mode (all optimizations on).
+The benchmark is done on a computer with 8750H CPU at 3.1GHz, 16GB dual-channel 2666MHz DDR4, 1060 6gb, and Arch Linux. The program is compiled in Clion (all optimizations on).
 
 ### Execution time comparison
 
